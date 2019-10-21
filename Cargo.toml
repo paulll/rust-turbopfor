@@ -1,0 +1,9 @@
+[package]
+name = "turbopfor"
+version = "0.1.0"
+authors = ["paulll <paulll@derpy.ru>"]
+edition = "2018"
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.50"
