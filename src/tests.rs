@@ -7,7 +7,7 @@ use std::vec;
 
 use super::*;
 
-fn decode_block(file_data: &mut Vec<u8>) -> Vec<u32> {
+fn decode_block(file_data: &[u8]) -> Vec<u32> {
     println!("dec size = {}", file_data.len());
 
     if file_data.len() == 0 {
@@ -25,14 +25,14 @@ fn decode_block(file_data: &mut Vec<u8>) -> Vec<u32> {
     let mut decoded_data = vec![0u32; (amount + 32).try_into().unwrap()];
 
     unsafe {
-        let _ = p4nd1dec256v32(file_data.as_mut_ptr().add(4) as *mut ::std::os::raw::c_uchar, amount.try_into().unwrap(), decoded_data.as_mut_ptr() as *mut u32);
+        let _ = p4nd1dec256v32(file_data.as_ptr().add(4) as *const ::std::os::raw::c_uchar, amount.try_into().unwrap(), decoded_data.as_mut_ptr() as *mut u32);
         decoded_data.resize(amount.try_into().unwrap(), 0);
     }
 
     return decoded_data;
 }
 
-fn encode_block(data: &mut Vec<u32>) -> Vec<u8> {
+fn encode_block(data: &[u32]) -> Vec<u8> {
     println!("enc size = {}", data.len());
 
     if data.len() == 0 {
@@ -47,15 +47,13 @@ fn encode_block(data: &mut Vec<u32>) -> Vec<u8> {
         return result;
     }
 
-    let ratio = mem::size_of::<u32>() / mem::size_of::<u8>();
-    let length = data.len() * ratio;
-    let mut encoded_data = vec![0u8+4; length];
+    let mut encoded_data = vec![0u8+4; data.len() * 4];
     let amount = data.len() as u32;
     let (ed_left, _) = encoded_data.split_at_mut(4);
     ed_left.copy_from_slice(&amount.to_le_bytes());
 
     unsafe {
-        let size = p4nd1enc256v32(data.as_mut_ptr() as *mut u32, data.len(), encoded_data.as_mut_ptr().add(4) as *mut ::std::os::raw::c_uchar);
+        let size = p4nd1enc256v32(data.as_ptr() as *const u32, data.len(), encoded_data.as_mut_ptr().add(4) as *mut ::std::os::raw::c_uchar);
         encoded_data.resize(size+4, 0);
     }
 
@@ -74,8 +72,8 @@ fn test_block(size_cap: usize) {
         source = vec![1u32, 2]
     }
 
-    let mut encoded = encode_block(&mut source);
-    let decoded = decode_block(&mut encoded);
+    let encoded = encode_block(&source[..]);
+    let decoded = decode_block(&encoded[..]);
     assert_eq!(&source[..], &decoded[..]);
 }
 
